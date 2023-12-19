@@ -64,9 +64,15 @@ Eval basic(const Input& input,
                                          input.vehicles[rhs]);
                              });
     break;
-  }
+  }///----тут понятно
 
-  const auto& evals = input.jobs_vehicles_evals();
+  const auto& evals = input.jobs_vehicles_evals();//хуй забей - у нас это пенальти
+  
+  // For a single job j, evals[j][v] evaluates fetching job j in an
+  // empty route from vehicle at rank v. For a pickup job j,
+  // evals[j][v] evaluates fetching job j **and** associated delivery
+  // in an empty route from vehicle at rank v.
+
 
   // regrets[v][j] holds the min cost for reaching job j in an empty
   // route across all remaining vehicles **after** vehicle at rank v
@@ -75,40 +81,46 @@ Eval basic(const Input& input,
                                          std::vector<Cost>(input.jobs.size()));
 
   // Use own cost for last vehicle regret values.
-  auto& last_regrets = regrets.back();
-  for (const auto j : unassigned) {
-    last_regrets[j] = evals[j][vehicles_ranks.back()].cost;
+  auto& last_regrets = regrets.back();//последний регрет - в ласт_регретс std::vector<vroom::Capacity>
+  for (const auto j : unassigned) {//для каждой unassigned джобы
+    last_regrets[j] = evals[j][vehicles_ranks.back()].cost;//набиваем last_regrets (кост) из евалс от джобы и от последней техники (??)
+    //похоже, что ласт регретс будет содержать последнюю строку таблицы евалс(цена всех джобов для последнего саба)
   }
 
   for (Index rev_v = 0; rev_v < nb_vehicles - 1; ++rev_v) {
     // Going trough vehicles backward from second to last.
-    const auto v = nb_vehicles - 2 - rev_v;
-    for (const auto j : unassigned) {
+    const auto v = nb_vehicles - 2 - rev_v;//задом наперед
+    for (const auto j : unassigned) {//для каждой джобы неасайненой
       regrets[v][j] =
         std::min(regrets[v + 1][j], (evals[j][vehicles_ranks[v + 1]]).cost);
+        //выбираем в регрет v,j минимальное из двух. либо регрет предыдущего саба для той же джобы. (почему??........)
+        //либо цена из евалса для предыдущего абона (почему v+1?)
+        //TODO: Вот эту тему надо уточнить. Похоже на нашу пенальти. 
     }
   }
 
   for (Index v = 0; v < nb_vehicles; ++v) {
     auto v_rank = vehicles_ranks[v];
-    auto& current_r = routes[v_rank];
+    auto& current_r = routes[v_rank];//по идее пустое, если не запихали кастомный маршрут.
 
-    const auto& vehicle = input.vehicles[v_rank];
+    const auto& vehicle = input.vehicles[v_rank];//v-тая техника. зачем они итерируют по индексу? оптимизация?
 
-    Eval current_route_eval;
+    Eval current_route_eval;//оценка текущего маршрута
 
     if (init != INIT::NONE) {
       // Initialize current route with the "best" valid job.
       bool init_ok = false;
 
-      Amount higher_amount(input.zero_amount());
-      Cost furthest_cost = 0;
+      Amount higher_amount(input.zero_amount());//что такое зеро амаунт?..
+      Cost furthest_cost = 0; //кост - комбинация времени, расстояния и еще чего-то. Похоже на пенальти
       Cost nearest_cost = std::numeric_limits<Cost>::max();
       Duration earliest_deadline = std::numeric_limits<Duration>::max();
-      Index best_job_rank = 0;
-      for (const auto job_rank : unassigned) {
-        const auto& current_job = input.jobs[job_rank];
+      Index best_job_rank = 0;//индекс лучшей джобы
+      for (const auto job_rank : unassigned) {//для всех джоб из анасайнед для каждой техники
+        const auto& current_job = input.jobs[job_rank];//текущая джоба в цикле. (почему из инпута?..) а, это не индекс
 
+
+        //-------------------------------------------------СКИП
         if (!input.vehicle_ok_with_job(v_rank, job_rank) ||
             current_job.type == JOB_TYPE::DELIVERY) {
           continue;
@@ -119,8 +131,9 @@ Eval basic(const Input& input,
         if (current_r.size() + (is_pickup ? 2 : 1) > vehicle.max_tasks) {
           continue;
         }
+        //------------------------------------------------СКИП
 
-        bool try_validity = false;
+        bool try_validity = false;//для чего?..
 
         if (init == INIT::HIGHER_AMOUNT) {
           try_validity |= (higher_amount < current_job.pickup ||
@@ -137,19 +150,20 @@ Eval basic(const Input& input,
         }
         if (init == INIT::NEAREST) {
           try_validity |= (evals[job_rank][v_rank].cost < nearest_cost);
-        }
+        }//валидируем условие по начальной точке. проверяем условие, лучше ли эта джоба - если нет - скип.
 
-        if (!try_validity) {
+        if (!try_validity) { //если чето не провалидолилось - тогда скип на следующую джобу
           continue;
         }
 
-        bool is_valid =
+        bool is_valid =//валидация по радиусу действия и капасити
           (vehicle.ok_for_range_bounds(evals[job_rank][v_rank])) &&
           current_r.is_valid_addition_for_capacity(input,
                                                    current_job.pickup,
                                                    current_job.delivery,
                                                    0);
-        if (is_pickup) {
+
+        if (is_pickup) {//---------------------скип
           std::vector<Index> p_d({job_rank, static_cast<Index>(job_rank + 1)});
           is_valid =
             is_valid && current_r.is_valid_addition_for_tw(input,
@@ -158,21 +172,22 @@ Eval basic(const Input& input,
                                                            p_d.end(),
                                                            0,
                                                            0);
-        } else {
+        }//----------------------скип
+         else {
           assert(current_job.type == JOB_TYPE::SINGLE);
           is_valid =
-            is_valid && current_r.is_valid_addition_for_tw(input, job_rank, 0);
+            is_valid && current_r.is_valid_addition_for_tw(input, job_rank, 0); //дополнительно валидируем сингл джобу по времени
         }
 
-        if (is_valid) {
+        if (is_valid) {//если всё ок по валидации.
           init_ok = true;
-          best_job_rank = job_rank;
+          best_job_rank = job_rank; //изначально была 0.
 
           switch (init) {
           case INIT::NONE:
             assert(false);
             break;
-          case INIT::HIGHER_AMOUNT:
+          case INIT::HIGHER_AMOUNT://это походу только для пикап-деливери?..
             if (higher_amount < current_job.pickup) {
               higher_amount = current_job.pickup;
             }
@@ -183,23 +198,25 @@ Eval basic(const Input& input,
           case INIT::EARLIEST_DEADLINE:
             earliest_deadline = is_pickup
                                   ? input.jobs[job_rank + 1].tws.back().end
-                                  : current_job.tws.back().end;
+                                  : current_job.tws.back().end;//переприсваиваем ближайший дедлайн для техники
             break;
           case INIT::FURTHEST:
-            furthest_cost = evals[job_rank][v_rank].cost;
+            furthest_cost = evals[job_rank][v_rank].cost;//переприсваем дальнюю стоимость для техники
             break;
           case INIT::NEAREST:
-            nearest_cost = evals[job_rank][v_rank].cost;
+            nearest_cost = evals[job_rank][v_rank].cost;//переприсваем ближайшую стоимость для техники
             break;
           }
         }
       }
+      //НАШЛИ ЛУЧШУЮ ДЖОБУ ДЛЯ ТЕХНИКИ ПО INIT TYPE
 
       if (init_ok) {
         if (input.jobs[best_job_rank].type == JOB_TYPE::SINGLE) {
-          current_r.add(input, best_job_rank, 0);
+          current_r.add(input, best_job_rank, 0);//Напихали в маршрут для саба, убрали из пула
           unassigned.erase(best_job_rank);
         }
+        //-----------------------СКИП
         if (input.jobs[best_job_rank].type == JOB_TYPE::PICKUP) {
           std::vector<Index> p_d(
             {best_job_rank, static_cast<Index>(best_job_rank + 1)});
@@ -208,11 +225,12 @@ Eval basic(const Input& input,
           unassigned.erase(best_job_rank);
           unassigned.erase(best_job_rank + 1);
         }
+        //-----------------------СКИП
         current_route_eval += evals[best_job_rank][v_rank];
-      }
-    }
+      }//ПРОИНИТИЛИ маршруты для сабов лучшей джобой.
+    }//НАЧАЛЬНАЯ точка - лучшая точка по ИНИТ критерию. дедлайн, дальняя, ближняя и тд
 
-    bool keep_going = true;
+    bool keep_going = true;//крутим крутим
     while (keep_going) {
       keep_going = false;
       double best_cost = std::numeric_limits<double>::max();
@@ -225,36 +243,36 @@ Eval basic(const Input& input,
 
       for (const auto job_rank : unassigned) {
         if (!input.vehicle_ok_with_job(v_rank, job_rank)) {
-          continue;
+          continue;//если техник не может обслужить - сразу скип джобы
         }
 
-        const auto& current_job = input.jobs[job_rank];
+        const auto& current_job = input.jobs[job_rank];//текущая джоба в цикле
 
-        if (current_job.type == JOB_TYPE::DELIVERY) {
-          continue;
+        if (current_job.type == JOB_TYPE::DELIVERY) {//-------------скип
+          continue;//Скип
         }
 
         if (current_job.type == JOB_TYPE::SINGLE &&
-            current_r.size() + 1 <= vehicle.max_tasks) {
-          for (Index r = 0; r <= current_r.size(); ++r) {
+            current_r.size() + 1 <= vehicle.max_tasks) { //Если сингл джоба и влазит по макс таскам
+          for (Index r = 0; r <= current_r.size(); ++r) {//То пробегаемся по маршруту(почему?....)
             const auto current_eval = utils::addition_cost(input,
                                                            job_rank,
                                                            vehicle,
                                                            current_r.route,
-                                                           r);
+                                                           r);//Считаем цену добавления джобы в маршрут саба (что такое r? на место r?)
 
             double current_cost =
               static_cast<double>(current_eval.cost) -
-              lambda * static_cast<double>(regrets[v][job_rank]);
+              lambda * static_cast<double>(regrets[v][job_rank]);//цена добавления - лямбда*регрет для техники и джобы
 
-            if (current_cost < best_cost &&
+            if (current_cost < best_cost && //если текущая цена лучше чем лучшая
                 (vehicle.ok_for_range_bounds(current_route_eval +
                                              current_eval)) &&
                 current_r.is_valid_addition_for_capacity(input,
                                                          current_job.pickup,
                                                          current_job.delivery,
                                                          r) &&
-                current_r.is_valid_addition_for_tw(input, job_rank, r)) {
+                current_r.is_valid_addition_for_tw(input, job_rank, r)) { //и валидация ОК
               best_cost = current_cost;
               best_job_rank = job_rank;
               best_r = r;
@@ -264,7 +282,7 @@ Eval basic(const Input& input,
         }
 
         if (current_job.type == JOB_TYPE::PICKUP &&
-            current_r.size() + 2 <= vehicle.max_tasks) {
+            current_r.size() + 2 <= vehicle.max_tasks) {//-----------------СКИП
           // Pre-compute cost of addition for matching delivery.
           std::vector<Eval> d_adds(current_r.route.size() + 1);
           std::vector<unsigned char> valid_delivery_insertions(
@@ -380,15 +398,15 @@ Eval basic(const Input& input,
             }
           }
         }
-      }
+      }//НАШЛИ лучшую джобу для добавления в маршрут
 
-      if (best_cost < std::numeric_limits<double>::max()) {
+      if (best_cost < std::numeric_limits<double>::max()) {//странное ограничение (почему?) крутит пока цена оч большой не станет?..
         if (input.jobs[best_job_rank].type == JOB_TYPE::SINGLE) {
-          current_r.add(input, best_job_rank, best_r);
-          unassigned.erase(best_job_rank);
-          keep_going = true;
+          current_r.add(input, best_job_rank, best_r);//добавляем в маршрут
+          unassigned.erase(best_job_rank);//выкидываем на мороз из неприсвоенных
+          keep_going = true;//продолжаем
         }
-        if (input.jobs[best_job_rank].type == JOB_TYPE::PICKUP) {
+        if (input.jobs[best_job_rank].type == JOB_TYPE::PICKUP) {//Скип
           std::vector<Index> modified_with_pd;
           modified_with_pd.reserve(best_delivery_r - best_pickup_r + 2);
           modified_with_pd.push_back(best_job_rank);
@@ -415,13 +433,13 @@ Eval basic(const Input& input,
 
     if (!current_r.empty()) {
       sol_eval += current_route_eval;
-      sol_eval += Eval(vehicle.fixed_cost());
+      sol_eval += Eval(vehicle.fixed_cost());//оценка маршрута
     }
   }
 
   return sol_eval;
 }
-
+//END OF MY
 template <class Route, std::forward_iterator Iter>
 Eval dynamic_vehicle_choice(const Input& input,
                             std::vector<Route>& routes,
