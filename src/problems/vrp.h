@@ -15,12 +15,21 @@ All rights reserved (see LICENSE).
 #include <numeric>
 #include <set>
 #include <thread>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <sstream> 
+
+
+
 
 #include "algorithms/heuristics/heuristics.h"
 #include "algorithms/local_search/local_search.h"
 #include "structures/vroom/eval.h"
 #include "structures/vroom/input/input.h"
 #include "structures/vroom/solution/solution.h"
+#include "utils/output_json.h"
 
 namespace vroom {
 
@@ -44,7 +53,7 @@ protected:
                                ? homogeneous_parameters
                                : heterogeneous_parameters;
     unsigned max_nb_jobs_removal = exploration_level;
-    unsigned nb_init_solutions = h_param.size();
+    unsigned nb_init_solutions = 1;
 
     if (nb_init_solutions == 0) {
       // Local search parameter.
@@ -85,6 +94,7 @@ protected:
 
     std::exception_ptr ep = nullptr;
     std::mutex ep_m;
+    std::mutex fileWriteMutex;
 
     auto run_heuristics = [&](const std::vector<std::size_t>& param_ranks) {
       try {
@@ -187,6 +197,9 @@ protected:
       std::rethrow_exception(ep);
     }
 
+    //------------
+
+    
     // Filter out duplicate heuristics solutions.
     std::set<utils::SolutionIndicators<Route>> unique_indicators;
     std::vector<unsigned> to_remove;
@@ -267,8 +280,39 @@ protected:
     utils::log_LS_operators(ls_stats);
 #endif
 
+
+
     auto best_indic =
       std::min_element(sol_indicators.cbegin(), sol_indicators.cend());
+
+    //------------TESTY-----------
+    auto best_sol_index = 0;
+    auto best_cost = std::numeric_limits<double>::max();
+    for (size_t i = 0; i < solutions.size(); i++)
+    {
+      std::cout << "-----------------Solution number:" << i << std::endl;
+      for (size_t j = 0; j < solutions[i].size(); j++)
+      {
+        std::cout << "----- Sub number:" << j << " __task_count:"<< solutions[i][j].size() << std::endl;
+      } 
+    }
+    
+
+    for (size_t i = 0; i < solutions.size(); i++) {
+        auto sol = utils::format_solution(_input,
+                                  solutions[i]);
+        
+        {
+            std::lock_guard<std::mutex> lock(fileWriteMutex);
+
+            std::stringstream filenameStr;
+            filenameStr << i << "sol.json";
+
+            vroom::io::write_to_json(sol, filenameStr.str());
+        }
+
+    }
+    //------------TESTY-----------
 
     return utils::format_solution(_input,
                                   solutions[std::distance(sol_indicators

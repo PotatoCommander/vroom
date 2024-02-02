@@ -66,7 +66,7 @@ Eval basic(const Input& input,
     break;
   }///----тут понятно
 
-  const auto& evals = input.jobs_vehicles_evals();//хуй забей - у нас это пенальти
+  const auto& evals = input.jobs_vehicles_evals();//забей - у нас это пенальти
   
   // For a single job j, evals[j][v] evaluates fetching job j in an
   // empty route from vehicle at rank v. For a pickup job j,

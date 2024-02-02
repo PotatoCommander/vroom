@@ -58,12 +58,12 @@ using LocalSearch = ls::LocalSearch<TWRoute,
 } // namespace vrptw
 
 const std::vector<HeuristicParameters> VRPTW::homogeneous_parameters =
-  {HeuristicParameters(HEURISTIC::BASIC, INIT::HIGHER_AMOUNT, 0.3),
+  {/*HeuristicParameters(HEURISTIC::BASIC, INIT::HIGHER_AMOUNT, 0.3),
    HeuristicParameters(HEURISTIC::BASIC, INIT::HIGHER_AMOUNT, 0.4),
-   HeuristicParameters(HEURISTIC::BASIC, INIT::EARLIEST_DEADLINE, 0.2),
-   HeuristicParameters(HEURISTIC::BASIC, INIT::FURTHEST, 0.3),
+   HeuristicParameters(HEURISTIC::BASIC, INIT::EARLIEST_DEADLINE, 0.2),*/
+  HeuristicParameters(HEURISTIC::BASIC, INIT::FURTHEST, 0.3),
 
-   HeuristicParameters(HEURISTIC::BASIC, INIT::NONE, 0.4),
+  /* HeuristicParameters(HEURISTIC::BASIC, INIT::NONE, 0.4),
    HeuristicParameters(HEURISTIC::BASIC, INIT::HIGHER_AMOUNT, 0.5),
    HeuristicParameters(HEURISTIC::BASIC, INIT::FURTHEST, 0.4),
    HeuristicParameters(HEURISTIC::BASIC, INIT::FURTHEST, 0.5),
@@ -71,7 +71,7 @@ const std::vector<HeuristicParameters> VRPTW::homogeneous_parameters =
    HeuristicParameters(HEURISTIC::BASIC, INIT::HIGHER_AMOUNT, 0.1),
    HeuristicParameters(HEURISTIC::BASIC, INIT::HIGHER_AMOUNT, 0.6),
    HeuristicParameters(HEURISTIC::BASIC, INIT::FURTHEST, 0.2),
-   HeuristicParameters(HEURISTIC::BASIC, INIT::FURTHEST, 0.7),
+  HeuristicParameters(HEURISTIC::BASIC, INIT::FURTHEST, 0.7),
 
    HeuristicParameters(HEURISTIC::BASIC, INIT::HIGHER_AMOUNT, 0.2),
    HeuristicParameters(HEURISTIC::BASIC, INIT::HIGHER_AMOUNT, 0.7),
@@ -96,7 +96,7 @@ const std::vector<HeuristicParameters> VRPTW::homogeneous_parameters =
    HeuristicParameters(HEURISTIC::BASIC, INIT::EARLIEST_DEADLINE, 2),
    HeuristicParameters(HEURISTIC::BASIC, INIT::FURTHEST, 0),
    HeuristicParameters(HEURISTIC::BASIC, INIT::FURTHEST, 0.9),
-   HeuristicParameters(HEURISTIC::BASIC, INIT::FURTHEST, 1)};
+   HeuristicParameters(HEURISTIC::BASIC, INIT::FURTHEST, 1)*/};
 
 const std::vector<HeuristicParameters> VRPTW::heterogeneous_parameters =
   {HeuristicParameters(HEURISTIC::DYNAMIC, INIT::HIGHER_AMOUNT, 0.5),
