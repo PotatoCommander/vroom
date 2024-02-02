@@ -25,6 +25,8 @@ All rights reserved (see LICENSE).
 #include "utils/output_json.h"
 #include "utils/version.h"
 
+#define LOG_LS_OPERATORS
+
 int main(int argc, char** argv) {
   vroom::io::CLArgs cl_args;
   std::vector<std::string> host_args;
