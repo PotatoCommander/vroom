@@ -1,6 +1,6 @@
 #ifndef VROOM_TYPEDEFS_H
 #define VROOM_TYPEDEFS_H
-
+#define LOG_LS_OPERATORS
 /*
 
 This file is part of VROOM.

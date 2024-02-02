@@ -1,6 +1,6 @@
 #ifndef VRP_H
 #define VRP_H
-
+#define LOG_LS_OPERATORS
 /*
 
 This file is part of VROOM.

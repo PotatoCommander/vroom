@@ -1,5 +1,6 @@
 #ifndef HELPERS_H
 #define HELPERS_H
+#define LOG_LS_OPERATORS
 
 /*
 
